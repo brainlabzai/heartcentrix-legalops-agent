@@ -1,45 +1,39 @@
-# HeartCentrix LegalOps AI Agent
+# HeartCentrix BCG LegalOps Agent – Backend (n8n + Supabase)
 
-Este repositório reúne **frontend** (Lovable) e **backend** (n8n + Supabase) do agente:
+This repository contains the backend for the **HeartCentrix × BCG AI LegalOps Assistant**.
 
-> _HeartCentrix LegalOps AI Assistant — um chatbot focado em Legal Operations, compliance e gestão de times jurídicos corporativos._
+It is implemented as a set of **n8n workflows** orchestrating:
 
-## Arquitetura
+- OpenAI (chat, embeddings, audio transcription)
+- Supabase (Postgres + vector store)
+- Google Drive (source PDFs)
+- HTTP webhooks consumed by the React frontend
 
-- **frontend/** – interface de chat feita no **Lovable** (React), com:
-  - Input de texto
-  - Upload de arquivos `.txt` (RAG pontual)
-  - Envio de áudio (transcrição automática)
-- **n8n/** – workflows de automação:
-  - `rag-agent.json` – agente RAG conectado ao Supabase Vector Store
-  - `chat-agent.json` – fluxo de conversação e memória com o usuário
-- **Supabase** – Vector Store com função `match_documents` para recuperar contexto.
-- **OpenAI** – usado tanto para:
-  - Embeddings (indexação e busca de contexto)
-  - Respostas do agente (modelo de chat)
-  - Transcrição de áudio (node “Transcribe a recording”)
+> The goal of this backend is to provide a robust, auditable and extensible LegalOps assistant for in-house legal, compliance and enterprise legal operations teams.
 
-## Fluxo resumido
+---
 
-1. Usuário interage no frontend (Lovable):
-   - mensagem de texto **ou**
-   - anexa `.txt` **ou**
-   - envia áudio.
-2. O frontend chama o **webhook do n8n**.
-3. O workflow decide:
-   - Se tem arquivo ⇒ extrai texto (`Extract from File`).
-   - Se tem áudio ⇒ transcreve (`Transcribe a recording`).
-   - Caso contrário ⇒ usa só o texto digitado.
-4. O **AI Agent** no n8n:
-   - Usa o vetor no Supabase (`match_documents`) para buscar contexto.
-   - Aplica o **System Prompt LegalOps**.
-   - Gera a resposta final.
-5. A resposta volta para o frontend e aparece no chat.
+## High-Level Architecture
 
-## Pastas
+```text
++---------------------------+         +----------------------+
+|  React Frontend (Lovable) | <-----> |  n8n Webhook (Chat)  |
++---------------------------+   POST  +----------+-----------+
+                                                |
+                                                v
+                                        +-------+--------+
+                                        |   AI Agent     |
+                                        |  (OpenAI LLM)  |
+                                        +---+-------+----+
+                                            |       |
+                                 tools: RAG |       | Memory
+                                            |       |
+                                            v       v
+                                   +--------+-------+-----------------+
+                                   |  Supabase Vector Store (RAG DB)  |
+                                   +----------------------------------+
 
-- `frontend/` – código e assets da interface Lovable.
-- `n8n/` – JSONs dos workflows + notas de configuração.
-- `docs/` (opcional) – diagramas, prints e documentação complementar.
-
-> **Status atual:** frontend ainda está versionado no repositório `heart-centrix-mockup`. Este repo será a base única (monorepo); a migração completa do frontend para `frontend/` será feita em breve.
+      +------------------------ n8n Scheduled Workflow ----------------------+
+      |                                                                      |
+      |   HTTP URLs + Google Drive PDFs  -->  Cleaning + Embeddings  --> DB |
+      +---------------------------------------------------------------------+
