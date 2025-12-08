@@ -2,6 +2,8 @@
 
 This repository contains the backend for the **HeartCentrix × BCG AI LegalOps Assistant**.
 
+**URL**: https://bcg-heartcentrix-poc.lovable.app 
+
 It is implemented as a set of **n8n workflows** orchestrating:
 
 - OpenAI (chat, embeddings, audio transcription)
