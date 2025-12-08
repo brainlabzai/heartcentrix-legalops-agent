@@ -101,3 +101,50 @@ The transcribed text is then used as the user message for the AI Agent.
 - **Key (session id):**
   ```n8n
   {{ $json.body.userId || "default-session" }}
+
+
+## High-Level Architecture
+
+```text
++-----------------------------+        +----------------------------+
+|        Lovable Frontend     |        |      n8n Cloud Instance    |
+|                             |        |                            |
+|  - Chat UI (messages)       |  HTTP  |  [1] Webhook               |
+|  - File upload (txt/pdf)    +------->+  - Receives JSON or        |
+|  - Voice recording (audio)  |        |    multipart/form-data     |
++-------------+---------------+        +-------------+--------------+
+                                                  |
+                                                  v
+                                        +---------+-----------+
+                                        |  Attachment Routing |
+                                        |  - If (has file?)   |
+                                        |  - Switch (type)    |
+                                        +----+------------+---+
+                                             |            |
+                           text/plain (.txt) |            | audio/webm
+                                             v            v
+                                  +----------+--+   +-----+--------------+
+                                  | Extract     |   | Transcribe         |
+                                  | from File   |   | a Recording (STT)  |
+                                  +------+------ +   +-----+-------------+
+                                         \              /
+                                          \            /
+                                           v          v
+                                         +-------------+
+                                         |  Simple     |
+                                         |  Memory     |
+                                         +------+------+ 
+                                                |
+                                                v
+                                        +-------+---------+
+                                        |   AI Agent      |
+                                        |  - System msg   |
+                                        |  - Memory       |
+                                        |  - User input   |
+                                        +-------+---------+
+                                                |
+                                                v
+                                      +---------+----------+
+                                      | Respond to Webhook |
+                                      |  - { reply: ... }  |
+                                      +--------------------+
